@@ -1,8 +1,25 @@
 pipeline {
   agent {
     kubernetes {
-      label 'codemender-agent'
       defaultContainer 'codemender'
+      yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: codemender-runner-sa
+  containers:
+  - name: codemender
+    image: us-central1-docker.pkg.dev/codemender-demo-project/codemender-runner/orchestrator:latest
+    command:
+    - sleep
+    args:
+    - "9999999"
+    tty: true
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "512Mi"
+'''
     }
   }
 

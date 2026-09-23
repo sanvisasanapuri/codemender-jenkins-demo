@@ -1,27 +1,43 @@
 pipeline {
-  agent any
+  agent {
+    kubernetes {
+      label 'codemender-agent'
+      defaultContainer 'codemender'
+    }
+  }
+
+  environment {
+    CODEMENDER_RUN_MODE         = 'sequential'
+    CODEMENDER_IS_PR_SCAN       = 'true'
+    CODEMENDER_FAIL_ON_FINDINGS = 'true'
+    CODEMENDER_STORAGE_MODE     = 'local'
+  }
 
   stages {
     stage('Checkout PR') {
       steps {
         checkout scm
-        sh '''
-          echo "=== Jenkins Triggered Successfully! ==="
-          echo "PR Number     : ${CHANGE_ID:-None (Branch build)}"
-          echo "Source Branch : ${CHANGE_BRANCH:-$BRANCH_NAME}"
-          echo "Target Branch : ${CHANGE_TARGET:-N/A}"
-          echo "Commit SHA    : ${GIT_COMMIT}"
-        '''
       }
     }
 
-    stage('Verify PR Diff') {
+    stage('Run CodeMender Orchestrator (Artifact Registry Image)') {
       when { changeRequest() }
       steps {
-        sh '''
-          echo "Running CI check on Pull Request #${CHANGE_ID}..."
-          git diff --name-only origin/${CHANGE_TARGET}...HEAD
-        '''
+        withCredentials([usernamePassword(
+          credentialsId: 'github-pat-cred',
+          usernameVariable: 'GITHUB_USER',
+          passwordVariable: 'GITHUB_TOKEN'
+        )]) {
+          sh '''
+            echo "=== Running CodeMender from Artifact Registry Container ==="
+            /usr/local/bin/cm --version
+            /opt/codemender/venv/bin/python3 /opt/codemender/orchestrator.py \
+              --pr-number "${CHANGE_ID}" \
+              --branch "${CHANGE_BRANCH}" \
+              --base-branch "${CHANGE_TARGET}" \
+              --repo "sanvisasanapuri/codemender-jenkins-demo"
+          '''
+        }
       }
     }
   }

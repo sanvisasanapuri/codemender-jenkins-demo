@@ -19,4 +19,4 @@ def get_user_orders(db_path: str, username: str) -> list:
 def ping_warehouse_node(warehouse_host: str) -> str:
     """Pings a warehouse server (Vulnerable to CWE-78 OS Command Injection)."""
     # Vulnerability 3 (CWE-78): Untrusted input executed with shell=True
-    return subprocess.check_output(f"ping -c 1 {warehouse_host}", shell=True, text=True)
+    return subprocess.check_output(["ping", "-c", "1", warehouse_host], text=True)

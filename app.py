@@ -12,7 +12,7 @@ def get_user_orders(db_path: str, username: str) -> list:
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     # Vulnerability 2 (CWE-89): Unparameterized SQL string interpolation
-    cursor.execute(f"SELECT id, username, item, total FROM orders WHERE username = '{username}'")
+    cursor.execute("SELECT id, username, item, total FROM orders WHERE username = ?", (username,))
     return cursor.fetchall()
 
 

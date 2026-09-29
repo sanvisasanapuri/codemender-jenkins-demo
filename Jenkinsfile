@@ -28,6 +28,7 @@ spec:
     GCP_PROJECT_ID             = 'codemender-demo-project'
     GCP_REGION                 = 'global'
     CODEMENDER_CLI_VERSION     = 'preview'
+    CODEMENDER_MODEL           = 'gemini-3.1-pro-preview'
     CODEMENDER_IS_PR_SCAN      = 'true'
     CODEMENDER_FAIL_ON_FINDINGS = 'true'
     CODEMENDER_SKIP_VERIFY     = 'true'

@@ -4,7 +4,7 @@ import sqlite3
 import subprocess
 
 # Vulnerability 1 (CWE-798): Hardcoded API secret credential
-PAYMENT_API_SECRET = "cm_demo_secret_token_987654321"
+PAYMENT_API_SECRET = os.getenv("PAYMENT_API_SECRET")
 
 
 def get_user_orders(db_path: str, username: str) -> list:

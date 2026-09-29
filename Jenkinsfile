@@ -1,7 +1,6 @@
 pipeline {
   agent {
     kubernetes {
-      defaultContainer 'codemender'
       yaml '''
 apiVersion: v1
 kind: Pod
@@ -9,51 +8,141 @@ spec:
   serviceAccountName: codemender-runner-sa
   containers:
   - name: codemender
-    image: us-central1-docker.pkg.dev/codemender-demo-project/codemender-runner/orchestrator:latest
-    command: ["sleep"]
-    args: ["9999999"]
+    image: >-
+      us-central1-docker.pkg.dev/codemender-demo-project/codemender-runner/orchestrator:latest
+    imagePullPolicy: Always
+    command: ["cat"]
     tty: true
     resources:
       requests:
-        cpu: "200m"
-        memory: "512Mi"
+        memory: "2Gi"
+        cpu: "1000m"
+      limits:
+        memory: "4Gi"
+        cpu: "2000m"
 '''
     }
   }
   environment {
-    CODEMENDER_IS_PR_SCAN       = 'true'
+    GOOGLE_CLOUD_PROJECT = 'codemender-demo-project'
+    GCP_PROJECT_ID = 'codemender-demo-project'
+    GCP_REGION = 'global'
+    CODEMENDER_CLI_VERSION = 'preview'
+    CODEMENDER_IS_PR_SCAN = 'true'
     CODEMENDER_FAIL_ON_FINDINGS = 'true'
-    CODEMENDER_STORAGE_MODE     = 'local'
-    CODEMENDER_GCS_BUCKET       = 'codemender-local-transit'
-    GCS_BUCKET_NAME             = 'codemender-local-transit'
+    CODEMENDER_SKIP_VERIFY = 'true'
+    CODEMENDER_SANDBOX_ENABLED = 'false'
+    CODEMENDER_STORAGE_MODE = 'local'
+    CODEMENDER_GCS_BUCKET = 'codemender-local-transit'
+    GITHUB_REPO_URL =
+      'https://github.com/sanvisasanapuri/codemender-jenkins-demo.git'
+    PY = '/opt/codemender/venv/bin/python3'
+    ORCH = '/opt/codemender/orchestrator.py'
   }
   stages {
-    stage('Checkout PR') {
-      steps { checkout scm }
-    }
-    stage('Run CodeMender PR Security Gate') {
+    stage('1. Scan & Dispatch') {
       when { changeRequest() }
       steps {
-        withCredentials([usernamePassword(
-          credentialsId: 'github-pat-cred',
-          usernameVariable: 'GH_USER',
-          passwordVariable: 'GITHUB_TOKEN'
-        )]) {
-          sh '''
-            [ -f /usr/local/bin/cm.real ] || cp /usr/local/bin/cm /usr/local/bin/cm.real
-            cp cm_fallback.py /usr/local/bin/cm && chmod +x /usr/local/bin/cm
-            export REPO_OWNER_AND_NAME="sanvisasanapuri/codemender-jenkins-demo"
-            export PR_NUMBER="${CHANGE_ID}"
-            export COMMIT_SHA="$(git rev-parse HEAD)"
-            export BASE_REF="origin/${CHANGE_TARGET:-main}"
-            git fetch origin "${CHANGE_TARGET:-main}" --depth=20 || true
-            /opt/codemender/venv/bin/python3 /opt/codemender/src/scan.py
-            for FID in $(jq -r '.[]' /tmp/finding_ids.json 2>/dev/null); do
-              /opt/codemender/venv/bin/python3 /opt/codemender/src/worker.py "${FID}"
-            done
-            /opt/codemender/venv/bin/python3 /opt/codemender/src/aggregate.py
-          '''
+        container('codemender') {
+          withCredentials([usernamePassword(
+            credentialsId: 'github-pat-cred',
+            usernameVariable: 'GH_USER',
+            passwordVariable: 'GITHUB_PAT'
+          )]) {
+            sh '''
+              set -e
+              export GITHUB_TOKEN="${GITHUB_PAT}"
+              export CODEMENDER_SCAN_ID="jenkins-${BUILD_NUMBER}"
+              export WORKSPACE_DIR="/tmp/cm_work"
+              mkdir -p "${WORKSPACE_DIR}"
+              git fetch origin "${CHANGE_BRANCH}" \
+                "${CHANGE_TARGET:-main}"
+              export CODEMENDER_TARGET_SHA=$(
+                git rev-parse "origin/${CHANGE_BRANCH}"
+              )
+              export CODEMENDER_RUN_MODE="scan"
+              ${PY} ${ORCH}
+            '''
+          }
         }
+      }
+    }
+    stage('2. Parallel Fix') {
+      when { changeRequest() }
+      steps {
+        container('codemender') {
+          withCredentials([usernamePassword(
+            credentialsId: 'github-pat-cred',
+            usernameVariable: 'GH_USER',
+            passwordVariable: 'GITHUB_PAT'
+          )]) {
+            sh '''
+              set -e
+              export GITHUB_TOKEN="${GITHUB_PAT}"
+              export CODEMENDER_SCAN_ID="jenkins-${BUILD_NUMBER}"
+              export WORKSPACE_DIR="/tmp/cm_work"
+              git fetch origin "${CHANGE_BRANCH}" \
+                "${CHANGE_TARGET:-main}"
+              export CODEMENDER_TARGET_SHA=$(
+                git rev-parse "origin/${CHANGE_BRANCH}"
+              )
+              M="/tmp/codemender_local_storage"
+              M="${M}/${CODEMENDER_GCS_BUCKET}"
+              M="${M}/scans/${CODEMENDER_SCAN_ID}/manifest.json"
+              FC=$(jq -r '.findings_count // 0' "${M}")
+              if [ "${FC}" -gt 0 ]; then
+                N=$(jq -r '.partition_urls | length' "${M}")
+                export CODEMENDER_TOTAL_WORKERS="${N}"
+                export CODEMENDER_BASE_WORKSPACE_URL=$(
+                  jq -r '.base_workspace_url' "${M}"
+                )
+                export CODEMENDER_PARTITION_URLS=$(
+                  jq -c '.partition_urls' "${M}"
+                )
+                export CODEMENDER_UPLOAD_URLS=$(
+                  jq -c '.upload_urls' "${M}"
+                )
+                export CODEMENDER_METADATA_URLS=$(
+                  jq -c '.metadata_urls' "${M}"
+                )
+                for i in $(seq 0 $((N - 1))); do
+                  export CODEMENDER_RUN_MODE="worker"
+                  export CODEMENDER_WORKER_INDEX="${i}"
+                  ${PY} ${ORCH}
+                done
+              fi
+            '''
+          }
+        }
+      }
+    }
+    stage('3. Aggregate & Gate') {
+      when { changeRequest() }
+      steps {
+        container('codemender') {
+          withCredentials([usernamePassword(
+            credentialsId: 'github-pat-cred',
+            usernameVariable: 'GH_USER',
+            passwordVariable: 'GITHUB_PAT'
+          )]) {
+            sh '''
+              set -e
+              export GITHUB_TOKEN="${GITHUB_PAT}"
+              export CODEMENDER_SCAN_ID="jenkins-${BUILD_NUMBER}"
+              export WORKSPACE_DIR="/tmp/cm_work"
+              git fetch origin "${CHANGE_BRANCH}" \
+                "${CHANGE_TARGET:-main}"
+              export CODEMENDER_TARGET_SHA=$(
+                git rev-parse "origin/${CHANGE_BRANCH}"
+              )
+              export CODEMENDER_RUN_MODE="aggregate"
+              ${PY} ${ORCH}
+              cp -f /tmp/cm_work/report.* . 2>/dev/null || true
+            '''
+          }
+        }
+        archiveArtifacts artifacts: 'report.*',
+          allowEmptyArchive: true
       }
     }
   }

@@ -45,7 +45,6 @@ spec:
       when { changeRequest() }
       input {
         message 'Approve PR build?'
-        submitter 'admin'
       }
       steps {
         container('codemender') {
@@ -74,10 +73,6 @@ spec:
 
     stage('2. Parallel Fix') {
       when { changeRequest() }
-      input {
-        message 'Approve PR build?'
-        submitter 'admin'
-      }
       steps {
         container('codemender') {
           withCredentials([usernamePassword(
@@ -122,10 +117,6 @@ spec:
 
     stage('3. Aggregate & Gate') {
       when { changeRequest() }
-      input {
-        message 'Approve PR build?'
-        submitter 'admin'
-      }
       steps {
         container('codemender') {
           withCredentials([usernamePassword(

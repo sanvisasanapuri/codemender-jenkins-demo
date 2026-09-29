@@ -57,8 +57,7 @@ spec:
               export WORKSPACE_DIR="/tmp/cm_work"
               mkdir -p "${WORKSPACE_DIR}"
 
-              git fetch origin "${CHANGE_BRANCH}" "${CHANGE_TARGET:-main}" 2>/dev/null || true
-              export CODEMENDER_TARGET_SHA=$(git rev-parse "origin/${CHANGE_BRANCH}" 2>/dev/null || git rev-parse HEAD)
+              export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD)
               export CODEMENDER_RUN_MODE="scan"
 
               ${PY} ${ORCH}
@@ -84,8 +83,7 @@ spec:
               export CODEMENDER_SCAN_ID="jenkins-${BUILD_NUMBER}"
               export WORKSPACE_DIR="/tmp/cm_work"
 
-              git fetch origin "${CHANGE_BRANCH}" "${CHANGE_TARGET:-main}" 2>/dev/null || true
-              export CODEMENDER_TARGET_SHA=$(git rev-parse "origin/${CHANGE_BRANCH}" 2>/dev/null || git rev-parse HEAD)
+              export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD)
 
               M="/tmp/codemender_local_storage/${CODEMENDER_GCS_BUCKET}/scans/${CODEMENDER_SCAN_ID}/manifest.json"
               FC=$(jq -r '.findings_count // 0' "${M}")
@@ -129,8 +127,7 @@ spec:
               export CODEMENDER_SCAN_ID="jenkins-${BUILD_NUMBER}"
               export WORKSPACE_DIR="/tmp/cm_work"
 
-              git fetch origin "${CHANGE_BRANCH}" "${CHANGE_TARGET:-main}" 2>/dev/null || true
-              export CODEMENDER_TARGET_SHA=$(git rev-parse "origin/${CHANGE_BRANCH}" 2>/dev/null || git rev-parse HEAD)
+              export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD)
               export CODEMENDER_RUN_MODE="aggregate"
 
               ${PY} ${ORCH}

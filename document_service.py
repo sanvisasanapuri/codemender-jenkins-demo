@@ -1,5 +1,5 @@
 import os
-import pickle
+import json
 import urllib.request
 
 
@@ -25,4 +25,4 @@ def fetch_partner_webhook(webhook_url: str) -> str:
 
 def load_user_session_token(token_bytes: bytes) -> dict:
     """Restores the user session object from raw token bytes."""
-    return pickle.loads(token_bytes)
+    return json.loads(token_bytes)

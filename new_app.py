@@ -28,9 +28,15 @@ def ping_host():
 
 @app.route('/read_file')
 def read_file():
-    filename = request.args.get('file')
+    filename = request.args.get('file', '')
     
-    with open(f"/var/www/uploads/{filename}", 'r') as f:
+    base_dir = os.path.abspath("/var/www/uploads")
+    file_path = os.path.abspath(os.path.join(base_dir, filename.lstrip('/')))
+    
+    if not file_path.startswith(base_dir + os.sep):
+        return "Access denied", 403
+        
+    with open(file_path, 'r') as f:
         content = f.read()
         
     return content

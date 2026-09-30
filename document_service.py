@@ -34,7 +34,7 @@ def fetch_partner_webhook(webhook_url: str) -> str:
             ip = socket.gethostbyname(parsed.hostname)
             ip_obj = ipaddress.ip_address(ip)
             
-        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast:
+        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast or ip_obj.is_unspecified:
             raise ValueError("Private/loopback IPs are not allowed")
     except Exception as e:
         raise ValueError(f"Invalid URL: {e}")

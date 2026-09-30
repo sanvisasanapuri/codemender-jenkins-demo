@@ -1,0 +1,22 @@
+--- Jenkinsfile
++++ Jenkinsfile
+@@ -71,6 +71,9 @@
+ 
+     stage('2. Parallel Fix') {
+       when { changeRequest() }
++      input {
++        message 'Approve PR build?'
++      }
+       steps {
+         container('codemender') {
+           withCredentials([usernamePassword(
+@@ -115,6 +118,9 @@
+ 
+     stage('3. Aggregate & Gate') {
+       when { changeRequest() }
++      input {
++        message 'Approve PR build?'
++      }
+       steps {
+         container('codemender') {
+           withCredentials([usernamePassword(

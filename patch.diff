@@ -1,0 +1,12 @@
+--- Jenkinsfile
++++ Jenkinsfile
+@@ -43,6 +43,9 @@
+   stages {
+     stage('1. Scan & Dispatch') {
+       when { changeRequest() }
++      input {
++        message 'Approve PR build?'
++      }
+       steps {
+         container('codemender') {
+           withCredentials([usernamePassword(

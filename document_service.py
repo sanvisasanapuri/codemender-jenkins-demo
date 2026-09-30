@@ -5,7 +5,10 @@ import urllib.request
 
 def read_user_document(storage_dir: str, filename: str) -> str:
     """Reads a user document from the storage directory."""
-    file_path = os.path.join(storage_dir, filename)
+    storage_path = os.path.abspath(storage_dir)
+    file_path = os.path.abspath(os.path.join(storage_dir, filename))
+    if os.path.commonpath([storage_path, file_path]) != storage_path:
+        raise ValueError("Path traversal detected")
     with open(file_path, "r", encoding="utf-8") as f:
         return f.read()
 

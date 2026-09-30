@@ -24,20 +24,20 @@ spec:
   }
 
   environment {
-    GOOGLE_CLOUD_PROJECT       = 'codemender-demo-project'
-    GCP_PROJECT_ID             = 'codemender-demo-project'
-    GCP_REGION                 = 'global'
-    CODEMENDER_CLI_VERSION     = 'preview'
-    CODEMENDER_MODEL           = 'gemini-3.1-pro-preview'
-    CODEMENDER_IS_PR_SCAN      = 'true'
+    GOOGLE_CLOUD_PROJECT        = 'codemender-demo-project'
+    GCP_PROJECT_ID              = 'codemender-demo-project'
+    GCP_REGION                  = 'global'
+    CODEMENDER_CLI_VERSION      = 'preview'
+    CODEMENDER_MODEL            = 'gemini-3.1-pro-preview'
+    CODEMENDER_IS_PR_SCAN       = 'true'
     CODEMENDER_FAIL_ON_FINDINGS = 'true'
-    CODEMENDER_SKIP_VERIFY     = 'true'
-    CODEMENDER_SANDBOX_ENABLED = 'false'
-    CODEMENDER_STORAGE_MODE    = 'local'
-    CODEMENDER_GCS_BUCKET      = 'codemender-local-transit'
-    GITHUB_REPO_URL            = 'https://github.com/sanvisasanapuri/codemender-jenkins-demo.git'
-    PY                         = '/opt/codemender/venv/bin/python3'
-    ORCH                       = '/opt/codemender/orchestrator.py'
+    CODEMENDER_SKIP_VERIFY      = 'true'
+    CODEMENDER_SANDBOX_ENABLED  = 'false'
+    CODEMENDER_STORAGE_MODE     = 'local'
+    CODEMENDER_GCS_BUCKET       = 'codemender-local-transit'
+    GITHUB_REPO_URL             = 'https://github.com/sanvisasanapuri/codemender-jenkins-demo.git'
+    PY                          = '/opt/codemender/venv/bin/python3'
+    ORCH                        = '/opt/codemender/orchestrator.py'
   }
 
   stages {
@@ -58,9 +58,13 @@ spec:
               export WORKSPACE_DIR="/tmp/cm_work"
               mkdir -p "${WORKSPACE_DIR}"
 
-              export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD)
-              export CODEMENDER_RUN_MODE="scan"
+              if git rev-parse --verify -q HEAD^2 >/dev/null; then
+                export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD^1)
+              else
+                export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD)
+              fi
 
+              export CODEMENDER_RUN_MODE="scan"
               ${PY} ${ORCH}
             '''
           }
@@ -84,7 +88,11 @@ spec:
               export CODEMENDER_SCAN_ID="jenkins-${BUILD_NUMBER}"
               export WORKSPACE_DIR="/tmp/cm_work"
 
-              export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD)
+              if git rev-parse --verify -q HEAD^2 >/dev/null; then
+                export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD^1)
+              else
+                export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD)
+              fi
 
               M="/tmp/codemender_local_storage/${CODEMENDER_GCS_BUCKET}/scans/${CODEMENDER_SCAN_ID}/manifest.json"
               FC=$(jq -r '.findings_count // 0' "${M}")
@@ -128,9 +136,13 @@ spec:
               export CODEMENDER_SCAN_ID="jenkins-${BUILD_NUMBER}"
               export WORKSPACE_DIR="/tmp/cm_work"
 
-              export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD)
-              export CODEMENDER_RUN_MODE="aggregate"
+              if git rev-parse --verify -q HEAD^2 >/dev/null; then
+                export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD^1)
+              else
+                export CODEMENDER_TARGET_SHA=$(git rev-parse HEAD)
+              fi
 
+              export CODEMENDER_RUN_MODE="aggregate"
               ${PY} ${ORCH}
               cp -f /tmp/cm_work/report.* . 2>/dev/null || true
             '''

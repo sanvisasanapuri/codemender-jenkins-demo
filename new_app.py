@@ -1,6 +1,7 @@
 from flask import Flask, request
 import sqlite3
 import os
+import subprocess
 
 app = Flask(__name__)
 
@@ -22,7 +23,7 @@ def get_user():
 def ping_host():
     host = request.args.get('host')
     
-    os.system(f"ping -c 1 {host}")
+    subprocess.run(["ping", "-c", "1", host])
     
     return "Ping command executed."
 

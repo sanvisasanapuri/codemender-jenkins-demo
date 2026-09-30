@@ -1,5 +1,3 @@
-import os
-import pickle
 import urllib.request
 import urllib.parse
 import socket
@@ -7,15 +5,7 @@ import ipaddress
 import http.client
 import ssl
 
-def read_user_document(storage_dir: str, filename: str) -> str:
-    """Reads a user document from the storage directory."""
-    file_path = os.path.join(storage_dir, filename)
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
-
-
 def fetch_partner_webhook(webhook_url: str) -> str:
-    """Sends a notification request to a partner webhook endpoint."""
     parsed = urllib.parse.urlparse(webhook_url)
     if parsed.scheme not in ("http", "https"):
         raise ValueError("Invalid URL scheme")
@@ -59,11 +49,12 @@ def fetch_partner_webhook(webhook_url: str) -> str:
         webhook_url,
         headers={"User-Agent": "PartnerWebhookClient/1.0"}
     )
+    
     opener = urllib.request.build_opener(SafeHTTPHandler(), SafeHTTPSHandler())
     with opener.open(req, timeout=5) as response:
         return response.read().decode("utf-8")
 
-
-def load_user_session_token(token_bytes: bytes) -> dict:
-    """Restores the user session object from raw token bytes."""
-    return pickle.loads(token_bytes)
+print("HTTP:")
+print(fetch_partner_webhook("http://example.com")[:50])
+print("HTTPS:")
+print(fetch_partner_webhook("https://example.com")[:50])

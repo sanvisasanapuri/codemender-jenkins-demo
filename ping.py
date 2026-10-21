@@ -19,14 +19,11 @@ def get_user():
 def ping_host():
     host = request.args.get('host')
     if host:
-        subprocess.run(["ping", "-c", "1", host])
+        if not is_valid_host(host):
+            return "Invalid host", 400
+        subprocess.run(["ping", "-c", "1", "--", host])
     
     return "Ping command executed."
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
-
-
-
-
-

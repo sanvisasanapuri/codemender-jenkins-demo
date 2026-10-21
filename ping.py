@@ -18,8 +18,8 @@ def get_user():
 @app.route('/ping')
 def ping_host():
     host = request.args.get('host')
-    
-    os.system(f"ping -c 1 {host}")
+    if host:
+        subprocess.run(["ping", "-c", "1", host])
     
     return "Ping command executed."
 

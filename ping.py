@@ -1,8 +1,22 @@
 from flask import Flask, request
-import sqlite3
+import ipaddress
 import os
+import re
+import sqlite3
+import subprocess
 
 app = Flask(__name__)
+
+def is_valid_host(host: str) -> bool:
+    if not host or not isinstance(host, str) or len(host) > 253:
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        pass
+    hostname_regex = r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$'
+    return bool(re.match(hostname_regex, host))
 
 @app.route('/user')
 def get_user():

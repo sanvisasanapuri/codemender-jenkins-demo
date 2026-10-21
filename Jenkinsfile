@@ -34,6 +34,11 @@ spec:
       defaultValue: 'default',
       description: 'LLM model ("default" uses the active cm binary default model, or specify a supported model name)'
     )
+    choice(
+      name: 'CODEMENDER_PR_SCAN_MODE',
+      choices: ['1hop_impact', 'changed_lines', 'changed_files', 'full_repo'],
+      description: 'PR Scan Scope Mode: 1hop_impact (--diff: modified files + 1-hop callers/callees), changed_lines (modified diff hunks), changed_files (whole modified files), or full_repo (--deep: full repo audit)'
+    )
   }
 
   environment {
@@ -44,6 +49,7 @@ spec:
     CODEMENDER_BINARY_VERSION   = "${params.CODEMENDER_BINARY_VERSION ?: 'latest'}"
     CODEMENDER_MODEL            = "${params.CODEMENDER_MODEL ?: 'default'}"
     CODEMENDER_IS_PR_SCAN       = 'true'
+    CODEMENDER_PR_SCAN_MODE     = "${params.CODEMENDER_PR_SCAN_MODE ?: '1hop_impact'}"
     CODEMENDER_FAIL_ON_FINDINGS = 'true'
     CODEMENDER_SKIP_VERIFY      = 'true'
     CODEMENDER_SANDBOX_ENABLED  = 'false'

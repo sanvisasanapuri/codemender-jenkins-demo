@@ -23,12 +23,26 @@ spec:
     }
   }
 
+  parameters {
+    string(
+      name: 'CODEMENDER_BINARY_VERSION',
+      defaultValue: 'latest',
+      description: 'CodeMender CLI binary version ("latest" uses latest stable release, or specify a semver like "0.16.0")'
+    )
+    string(
+      name: 'CODEMENDER_MODEL',
+      defaultValue: 'default',
+      description: 'LLM model ("default" uses the active cm binary default model, or specify a supported model name)'
+    )
+  }
+
   environment {
     GOOGLE_CLOUD_PROJECT        = 'codemender-demo-project'
     GCP_PROJECT_ID              = 'codemender-demo-project'
     GCP_REGION                  = 'global'
     CODEMENDER_CLI_VERSION      = 'preview'
-    CODEMENDER_MODEL            = 'gemini-3.1-pro-preview'
+    CODEMENDER_BINARY_VERSION   = "${params.CODEMENDER_BINARY_VERSION ?: 'latest'}"
+    CODEMENDER_MODEL            = "${params.CODEMENDER_MODEL ?: 'default'}"
     CODEMENDER_IS_PR_SCAN       = 'true'
     CODEMENDER_FAIL_ON_FINDINGS = 'true'
     CODEMENDER_SKIP_VERIFY      = 'true'

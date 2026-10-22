@@ -2,7 +2,7 @@ import os
 import re
 import sqlite3
 import subprocess
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_from_directory
 
 app = Flask(__name__)
 DB_PATH = os.getenv("ORDERS_DB_PATH", "orders.db")
